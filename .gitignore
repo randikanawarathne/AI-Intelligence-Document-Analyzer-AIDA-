@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+.env
+
+# Node
+node_modules/
+frontend/build/
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Docker
+.dockerignore
