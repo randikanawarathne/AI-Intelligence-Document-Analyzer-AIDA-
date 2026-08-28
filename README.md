@@ -1,258 +1,126 @@
-# AIDA — AI Intelligence Document Analyzer
+# AIDA — AI Intelligence Document Analyzer (v2.0)
 
-> A production-grade RAG (Retrieval-Augmented Generation) system for intelligence analysis.  
-> Upload documents → semantic search via FAISS → LLM-generated answers.
+> **Next-Generation Local & Cloud Intelligence Analysis Platform**
+> 100% Private, Local LLM Intelligence powered by **Ollama** (`llama3.2`, `mistral`, `deepseek-r1`, `nomic-embed-text`), FastAPI hybrid vector search, Cloud Firestore persistence, Firebase Authentication, and interactive 60fps relational knowledge maps.
 
-![Stack](https://img.shields.io/badge/FastAPI-0.111-009688?style=flat-square&logo=fastapi)
-![Stack](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react)
-![Stack](https://img.shields.io/badge/FAISS-1.8-blue?style=flat-square)
-![Stack](https://img.shields.io/badge/OpenAI-GPT--4o--mini-412991?style=flat-square&logo=openai)
-
----
-
-## Architecture
-
-```
-User → React Frontend (port 3000)
-         │
-         ▼
-  FastAPI Backend (port 8000)
-         │
-    ┌────┴──────────────────┐
-    │                       │
-    ▼                       ▼
-Text Chunking          POST /query
-+ tiktoken                  │
-    │                  Embed query
-    ▼                  FAISS search
-OpenAI Embeddings      Top-K chunks
-(ada-002)                   │
-    │                       ▼
-    ▼              GPT-4o-mini answer
-FAISS IndexFlatIP           │
-(cosine similarity)         ▼
-                       JSON response
-                     { answer, citations }
-```
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)
+![Ollama](https://img.shields.io/badge/Local%20LLM-Ollama%20(Llama%203.2)-f97316.svg)
+![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.14-059669.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)
+![HTML5 / CSS3](https://img.shields.io/badge/Frontend-Vanilla%20HTML%2FCSS%2FJS-4f46e5.svg)
+![Firebase](https://img.shields.io/badge/Cloud%20DB-Firebase%20Firestore-f59e0b.svg)
+![Theme](https://img.shields.io/badge/Design-Executive%20Light%20%26%20Dark-2563eb.svg)
 
 ---
 
-## Quick Start
+## 🦙 100% Local Intelligence with Ollama
 
-### Prerequisites
+AIDA defaults to running **completely locally and privately** using **Ollama**, eliminating the need for paid cloud API keys:
 
-- Python 3.11+
-- Node.js 20+
-- OpenAI API key (`OPENAI_API_KEY`)
-
-### Option A — Local (recommended for development)
-
-**1. Backend**
-
+### 1. Install & Launch Ollama
+Download Ollama from [ollama.com](https://ollama.com) and start your preferred model:
 ```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scripts\activate
+# Pull and run the reasoning model
+ollama run llama3.2
+
+# (Optional) Pull the dense embedding model
+ollama pull nomic-embed-text
+```
+
+### 2. Configure Environment (`.env`)
+```env
+LLM_PROVIDER=ollama
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=llama3.2
+OLLAMA_EMBED_MODEL=nomic-embed-text
+```
+
+---
+
+## 🌟 Key Capabilities
+
+1. **Local & Cloud Intelligence (Ollama / Fallback / Cloud)**:
+   - Zero-cost local intelligence via **Ollama** (`llama3.2`, `mistral`, `deepseek-r1`, `qwen2.5`).
+   - Dense local embeddings via `nomic-embed-text` or built-in TF-IDF / Cosine Vector Space.
+   - Optional fallbacks to OpenAI / Google Gemini if configured.
+
+2. **Authentication & Security Clearances**:
+   - Integrated **Firebase Authentication** with security classification badges (`TOP SECRET // NOFORN`).
+   - One-click **"⚡ Instant Demo Access (Lead Intelligence Analyst)"** bypass for rapid review.
+   - User profile dropdown, avatar initials, and sign-out controls.
+
+3. **Cloud Database (Firebase Firestore)**:
+   - Synchronize uploaded document metadata, chunks, chat history, and generated intelligence dossiers to **Google Cloud Firestore**.
+   - Built-in LocalStorage fallback for 100% offline, zero-configuration operation.
+   - Custom Firebase config JSON editor in Settings.
+
+4. **Pristine Executive Light Theme & Modern Typography**:
+   - Executive light aesthetic (clean porcelain `#f8fafc`, pristine white cards, deep slate text `#0f172a`, cyber emerald accents `#059669`).
+   - Professional typography stack: **Plus Jakarta Sans** (headings), **Inter** (UI), **JetBrains Mono** (telemetry & citations).
+   - Instant ☀️ Light / 🌙 Dark Theme toggle in topbar and settings.
+
+5. **Optimized Mobile UX**:
+   - Responsive layout with mobile header and slide-over navigation drawer.
+   - Touch-optimized tactical playbooks (`🎯 Threat Profiling`, `💰 Financial Forensics`, `⏱ Timeline Reconstruction`).
+   - Mobile-optimized collapsible Citation Inspector drawer.
+
+6. **Multi-Source Document Ingestion**:
+   - Ingest `.pdf`, `.docx`, `.txt`, `.csv`, `.json`, and `.md`.
+   - Automated token-aware sliding window chunker (450 tokens, 50 overlap).
+   - Regex-based Named Entity Recognition (NER) for APT threat actors, CVEs, IPs, crypto/wire transactions, and jurisdictions.
+
+7. **Relational Knowledge Map**:
+   - 60fps HTML5 Canvas physics simulation with Coulomb repulsion and Hooke springs.
+   - Particle pulses along active connections, entity filtering chips, drag, zoom, and cross-reference pivoting.
+
+8. **Intelligence Dossier Generator**:
+   - Multi-format briefing exporter: **Printable PDF**, **Markdown (.md)**, **Standalone HTML Report**, and **JSON Dataset**.
+
+---
+
+## 🚀 Quick Start (Local)
+
+### 1. Windows 1-Click Launch
+Double-click `start.bat` or run:
+```powershell
+.\start.ps1
+```
+
+### 2. Manual Command Line
+```bash
+# 1. Install dependencies
 pip install -r requirements.txt
 
-# Set your OpenAI key
-export OPENAI_API_KEY=sk-your-key-here
-
-uvicorn main:app --reload
-# → http://localhost:8000
-# → http://localhost:8000/docs  (Swagger UI)
+# 2. Start the unified FastAPI + Static Web server
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 ```
+Open **[http://localhost:8000](http://localhost:8000)** in your browser.
 
-**2. Frontend**
+---
 
+## ☁️ Deploy to Vercel (1-Click)
+
+The repository includes pre-configured `vercel.json` and `api/index.py` serverless functions.
+
+1. Push this repository to **GitHub**:
+   ```bash
+   git add .
+   git commit -m "feat: AIDA with Ollama local integration and Vercel support"
+   git push origin main
+   ```
+2. Go to [vercel.com/new](https://vercel.com/new) and import your repository.
+3. Click **Deploy**!
+
+---
+
+## 🧪 Testing
+
+Run the automated endpoint test suite:
 ```bash
-cd frontend
-npm install
-npm start
-# → http://localhost:3000
-```
-
-### Option B — Docker Compose (one command)
-
-```bash
-# Create .env file
-echo "OPENAI_API_KEY=sk-your-key-here" > .env
-
-docker compose up --build
-# Backend  → http://localhost:8000
-# Frontend → http://localhost:3000
+python test_backend.py
 ```
 
 ---
 
-## API Reference
-
-### `GET /health`
-Returns system status, vector count, and document count.
-
-```json
-{
-  "status": "ok",
-  "vectors": 1248,
-  "documents": 3,
-  "chunks": 1560
-}
-```
-
-### `POST /upload`
-Upload a document for ingestion.
-
-```bash
-curl -X POST http://localhost:8000/upload \
-  -F "file=@report.pdf"
-```
-
-```json
-{
-  "message": "Document processed successfully",
-  "chunks": 847,
-  "elapsed_s": 3.2
-}
-```
-
-### `POST /query`
-Query the knowledge base.
-
-```bash
-curl -X POST http://localhost:8000/query \
-  -H "Content-Type: application/json" \
-  -d '{"query": "What financial anomalies were detected?"}'
-```
-
-```json
-{
-  "answer": "Based on the documents...",
-  "citations": [
-    {
-      "chunk_id": 42,
-      "score": 0.94,
-      "source": "report.pdf",
-      "text": "Relevant extracted passage..."
-    }
-  ]
-}
-```
-
-### `GET /documents`
-List all ingested documents.
-
-### `GET /stats`
-Get detailed system statistics.
-
----
-
-## Project Structure
-
-```
-aida/
-├── backend/
-│   ├── main.py              # FastAPI app — all endpoints
-│   ├── requirements.txt
-│   ├── Dockerfile
-│   └── .env.example
-│
-├── frontend/
-│   ├── src/
-│   │   ├── App.js           # Router + system health check
-│   │   ├── index.css        # Design tokens (CSS variables)
-│   │   ├── components/
-│   │   │   ├── Sidebar.js   # Navigation sidebar
-│   │   │   ├── Topbar.js    # Top navigation bar
-│   │   │   └── NetworkGraph.js  # Animated canvas knowledge map
-│   │   ├── pages/
-│   │   │   ├── DashboardPage.js   # Overview + quick actions
-│   │   │   ├── IntelPage.js       # Bento grid intel dashboard
-│   │   │   ├── SystemsPage.js     # Health monitoring + live logs
-│   │   │   ├── WorkspacePage.js   # RAG chat interface
-│   │   │   └── KnowledgePage.js   # Document upload + management
-│   │   └── utils/
-│   │       └── api.js        # Axios API client
-│   ├── public/index.html
-│   ├── package.json
-│   ├── Dockerfile
-│   └── nginx.conf
-│
-├── docker-compose.yml
-└── README.md
-```
-
----
-
-## Features
-
-| Feature | Details |
-|---|---|
-| **Document Ingestion** | PDF, DOCX, TXT — chunked with tiktoken (500 tok / 50 overlap) |
-| **Embeddings** | OpenAI `text-embedding-ada-002` (1536-dim) |
-| **Vector Search** | FAISS `IndexFlatIP` with L2-normalised vectors (cosine similarity) |
-| **Generation** | GPT-4o-mini with retrieved context + system prompt |
-| **Citations** | Every answer returns top-K source chunks with similarity scores |
-| **Frontend** | React 18 + React Router, dark intel theme matching Figma design |
-| **Live Network Graph** | Canvas-animated node graph with physics simulation |
-| **System Monitoring** | Real-time logs, FAISS stats, FastAPI metrics |
-
----
-
-## Supported File Types
-
-| Extension | Parser |
-|---|---|
-| `.pdf` | `pypdf` |
-| `.txt` | UTF-8 decode |
-| `.docx` | UTF-8 decode (raw text) |
-
-> **Phase 2 upgrade:** Add `python-docx` for proper DOCX extraction, `pypdf` OCR for scanned PDFs.
-
----
-
-## Configuration
-
-| Variable | Default | Description |
-|---|---|---|
-| `OPENAI_API_KEY` | — | **Required.** Your OpenAI API key |
-| `EMBEDDING_MODEL` | `text-embedding-ada-002` | Embedding model |
-| `CHUNK_SIZE` | `500` | Tokens per chunk |
-| `CHUNK_OVERLAP` | `50` | Overlap between chunks |
-| `TOP_K` | `5` | Retrieved chunks per query |
-
----
-
-## Roadmap
-
-### Phase 2
-- [ ] Persist FAISS index to disk (`faiss.write_index`)
-- [ ] Proper DOCX parsing with `python-docx`
-- [ ] Chunk overlap deduplication
-- [ ] Authentication (JWT)
-
-### Phase 3
-- [ ] Multi-user support with isolated indexes
-- [ ] Chat history persistence (PostgreSQL)
-- [ ] Streaming responses (SSE)
-- [ ] Re-ranking with cross-encoder
-
-### Phase 4
-- [ ] Role-based access control
-- [ ] Dashboard analytics
-- [ ] LangChain integration
-- [ ] Open-source model support (Ollama)
-
----
-
-## Security Notes
-
-- Never commit your `OPENAI_API_KEY` — use `.env` files or secrets managers
-- Validate file uploads (type + size limits) before processing
-- Add rate limiting to `/upload` and `/query` in production
-- Index is in-memory — restart clears all data (Phase 2 adds persistence)
-
----
-
-## License
-
-MIT
+## 📄 License
+MIT License. Open source and free to use.

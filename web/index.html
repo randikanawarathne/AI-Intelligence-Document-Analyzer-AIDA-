@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AIDA — AI Intelligence Document Analyzer</title>
+  <meta name="description" content="Next-Generation RAG & Relational Intelligence Analysis Platform">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23059669'/><text x='50%' y='65%' font-size='60' font-weight='bold' text-anchor='middle' fill='%23ffffff'>A</text></svg>">
+  
+  <!-- Firebase SDKs (v10 compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <!-- Client-side Document Parsers -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════
+     AUTHENTICATION & LOGIN OVERLAY
+     ══════════════════════════════════════════════════════════════ -->
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo">A</div>
+      <h2 class="auth-title">AIDA Intelligence Terminal</h2>
+      <p class="auth-subtitle">AI Intelligence Document Analyzer & Security RAG</p>
+      <div>
+        <span class="clearance-badge">🔒 CLASSIFICATION: TOP SECRET // NOFORN</span>
+      </div>
+    </div>
+
+    <!-- Quick Demo Login Button -->
+    <button class="auth-demo-btn" onclick="app.quickDemoLogin()">
+      <span>⚡ Instant Demo Access (Lead Analyst)</span>
+    </button>
+
+    <div class="auth-divider">OR AUTHENTICATE WITH CREDENTIALS</div>
+
+    <!-- Auth Tabs -->
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login-btn" onclick="document.getElementById('auth-login-form').style.display='flex'; document.getElementById('auth-signup-form').style.display='none'; this.classList.add('active'); document.getElementById('tab-signup-btn').classList.remove('active');">
+        Sign In
+      </div>
+      <div class="auth-tab" id="tab-signup-btn" onclick="document.getElementById('auth-login-form').style.display='none'; document.getElementById('auth-signup-form').style.display='flex'; this.classList.add('active'); document.getElementById('tab-login-btn').classList.remove('active');">
+        Create Account
+      </div>
+    </div>
+
+    <!-- Sign In Form -->
+    <form class="auth-form" id="auth-login-form">
+      <div>
+        <label class="form-label">Analyst Email</label>
+        <input type="email" class="form-input" id="auth-email" placeholder="analyst@agency.gov" value="dr.vance@aida.intel" required>
+      </div>
+      <div>
+        <label class="form-label">Security Passphrase</label>
+        <input type="password" class="form-input" id="auth-password" placeholder="••••••••" value="analyst2026" required>
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%; justify-content:center; padding:11px;">
+        AUTHENTICATE & ENTER →
+      </button>
+    </form>
+
+    <!-- Sign Up Form (Hidden by default) -->
+    <form class="auth-form" id="auth-signup-form" style="display:none;">
+      <div>
+        <label class="form-label">Full Name & Title</label>
+        <input type="text" class="form-input" id="signup-name" placeholder="Dr. Jane Doe (Forensic Lead)">
+      </div>
+      <div>
+        <label class="form-label">Official Email</label>
+        <input type="email" class="form-input" id="signup-email" placeholder="j.doe@agency.gov" required>
+      </div>
+      <div>
+        <label class="form-label">Create Passphrase (min 6 chars)</label>
+        <input type="password" class="form-input" id="signup-password" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%; justify-content:center; padding:11px;">
+        REGISTER ANALYST CREDENTIALS →
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Mobile Drawer Backdrop -->
+<div class="mobile-backdrop" id="mobile-backdrop"></div>
+
+<div id="app">
+  <!-- ══════════════════════════════════════════════════════════════
+       SIDEBAR NAVIGATION
+       ══════════════════════════════════════════════════════════════ -->
+  <aside class="sidebar">
+    <!-- Brand -->
+    <div class="brand-section">
+      <div class="brand-icon">A</div>
+      <div class="brand-text">
+        <div class="brand-title">
+          AIDA <span class="brand-version">v2.0</span>
+        </div>
+        <div class="brand-sub">System Intelligence</div>
+      </div>
+    </div>
+
+    <!-- User Profile Card in Sidebar -->
+    <div style="padding: 12px 14px; border-bottom: 1px solid var(--border-subtle);">
+      <div class="user-sidebar-profile">
+        <div class="user-sidebar-avatar" id="topbar-user-avatar">AN</div>
+        <div class="user-sidebar-info">
+          <div class="user-sidebar-name" id="sidebar-user-name">Dr. Vance</div>
+          <div class="user-sidebar-role" id="sidebar-user-role">Lead Analyst</div>
+        </div>
+        <button class="user-sidebar-logout" onclick="app.logout()" title="Sign Out">🚪</button>
+      </div>
+    </div>
+
+    <!-- Navigation Menu -->
+    <nav class="sidebar-nav">
+      <div class="nav-category">Intelligence Operations</div>
+      
+      <a class="nav-item active" data-view="dashboard">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        </span>
+        <span>Dashboard</span>
+      </a>
+
+      <a class="nav-item" data-view="intel">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+        </span>
+        <span>Intel Hub</span>
+        <span class="nav-badge alert">LIVE</span>
+      </a>
+
+      <a class="nav-item" data-view="workspace">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </span>
+        <span>RAG Workspace</span>
+      </a>
+
+      <div class="nav-category">Knowledge Store</div>
+
+      <a class="nav-item" data-view="knowledge">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </span>
+        <span>Knowledge Base</span>
+        <span class="nav-badge" id="kb-nav-badge">CORPUS</span>
+      </a>
+
+      <a class="nav-item" data-view="systems">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+        </span>
+        <span>Systems Telemetry</span>
+      </a>
+
+      <a class="nav-item" data-view="settings">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </span>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer -->
+    <div class="sidebar-footer">
+      <div class="system-status-indicator">
+        <span class="status-dot" id="sidebar-status-dot"></span>
+        <span class="status-text" id="sidebar-status-text">FastAPI Online</span>
+      </div>
+      <button class="btn-outline" style="width:100%; justify-content:center; font-size:11px; padding:6px;" onclick="app.openDossierModal()">
+        📑 EXPORT DOSSIER
+      </button>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       MAIN CONTENT WRAPPER
+       ══════════════════════════════════════════════════════════════ -->
+  <main class="main-wrapper">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" id="mobile-menu-btn" title="Open Menu">☰</button>
+        <div class="global-search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="global-search-input" placeholder="SEARCH ENTITIES, CVEs, IOCs, OR THREAT NODES...">
+          <span class="kbd-shortcut">CTRL + K</span>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <div class="telemetry-pill">
+          <span>MODEL:</span>
+          <span class="val" id="topbar-model-pill">Hybrid Neural RAG</span>
+        </div>
+
+        <!-- Light / Dark Theme Toggle Button -->
+        <button class="icon-btn" id="theme-toggle-btn" title="Switch Theme" onclick="app.toggleTheme()">
+          🌙
+        </button>
+
+        <button class="icon-btn" id="audio-toggle-btn" title="Toggle Tactical Sounds" onclick="soundEngine.toggle(); this.classList.toggle('active', soundEngine.enabled);">
+          🔊
+        </button>
+
+        <button class="btn-primary" onclick="app.openDossierModal()">
+          <span>GENERATE BRIEFING</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         VIEW 1: DASHBOARD
+         ══════════════════════════════════════════════════════════════ -->
+    <section class="view-content active" id="view-dashboard">
+      <div class="page-container">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">AIDA Strategic Overview</h1>
+            <p class="page-subtitle">Production-grade AI Intelligence Document Analyzer. Correlating document intelligence, cybersecurity threats, and relational vector topologies.</p>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn-outline" onclick="app.loadSampleIntelCorpus()">LOAD SAMPLE INTEL CORPUS</button>
+            <button class="btn-primary" onclick="app.switchView('workspace')">QUERY INTELLIGENCE →</button>
+          </div>
+        </div>
+
+        <!-- Metric Grid -->
+        <div class="metric-grid">
+          <div class="metric-card" style="--card-color: var(--emerald);">
+            <div class="metric-label">
+              <span>Total Vectors Indexed</span>
+              <span>⚡</span>
+            </div>
+            <div class="metric-value" id="metric-total-vectors">1,248</div>
+            <div class="metric-sub">Across active FAISS vector space</div>
+          </div>
+
+          <div class="metric-card" style="--card-color: var(--blue);">
+            <div class="metric-label">
+              <span>Documents Ingested</span>
+              <span>📄</span>
+            </div>
+            <div class="metric-value" id="metric-total-docs">3</div>
+            <div class="metric-sub">Multi-source corpus cataloged</div>
+          </div>
+
+          <div class="metric-card" style="--card-color: var(--crimson);">
+            <div class="metric-label">
+              <span>Active Threat Alerts</span>
+              <span>⚠</span>
+            </div>
+            <div class="metric-value">4</div>
+            <div class="metric-sub">1 critical financial anomaly</div>
+          </div>
+
+          <div class="metric-card" style="--card-color: var(--indigo);">
+            <div class="metric-label">
+              <span>Avg Retrieval Latency</span>
+              <span>⏱</span>
+            </div>
+            <div class="metric-value">3.2<span style="font-size:16px; color:var(--text-muted); font-weight:600;">ms</span></div>
+            <div class="metric-sub">Cosine similarity search</div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-action-grid">
+          <div class="quick-action-card" onclick="app.switchView('workspace')">
+            <div class="action-icon-wrap">💬</div>
+            <div class="action-card-title">Query Intelligence</div>
+            <div class="action-card-desc">Ask complex analytical questions across all indexed intelligence documents with citations.</div>
+          </div>
+
+          <div class="quick-action-card" onclick="app.switchView('knowledge')">
+            <div class="action-icon-wrap">📄</div>
+            <div class="action-card-title">Ingest Documents</div>
+            <div class="action-card-desc">Drag & drop PDFs, DOCX, TXT, CSV, or JSON for automatic chunking and entity extraction.</div>
+          </div>
+
+          <div class="quick-action-card" onclick="app.switchView('intel')">
+            <div class="action-icon-wrap">🧠</div>
+            <div class="action-card-title">Knowledge Map</div>
+            <div class="action-card-desc">Interact with the 60fps force-directed relational entity graph and threat correlations.</div>
+          </div>
+
+          <div class="quick-action-card" onclick="app.switchView('systems')">
+            <div class="action-icon-wrap">⚙️</div>
+            <div class="action-card-title">System Telemetry</div>
+            <div class="action-card-desc">Inspect real-time FastAPI metrics, FAISS vector performance, and live terminal logs.</div>
+          </div>
+        </div>
+
+        <!-- Architecture Flow -->
+        <div class="arch-flow-section">
+          <div class="arch-header">AIDA RAG Pipeline Architecture</div>
+          <div class="arch-steps">
+            <div class="arch-step-box">
+              <span class="step-num">STAGE 01</span>
+              <span class="step-name">Document Ingestion</span>
+              <span class="step-sub">PDF · DOCX · TXT · CSV</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-step-box">
+              <span class="step-num">STAGE 02</span>
+              <span class="step-name">Sliding Window Chunker</span>
+              <span class="step-sub">450 tokens / 50 overlap</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-step-box">
+              <span class="step-num">STAGE 03</span>
+              <span class="step-name">Entity Extractor (NER)</span>
+              <span class="step-sub">APTs, CVEs, IPs, Financials</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-step-box">
+              <span class="step-num">STAGE 04</span>
+              <span class="step-name">Vector Embeddings</span>
+              <span class="step-sub">Ada-002 / Gemini / TF-IDF</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-step-box">
+              <span class="step-num">STAGE 05</span>
+              <span class="step-name">FAISS Vector DB</span>
+              <span class="step-sub">Cosine IndexFlatIP</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-step-box">
+              <span class="step-num">STAGE 06</span>
+              <span class="step-name">Intelligence Reasoning</span>
+              <span class="step-sub">GPT-4o / Gemini / Hybrid</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         VIEW 2: INTEL HUB
+         ══════════════════════════════════════════════════════════════ -->
+    <section class="view-content" id="view-intel">
+      <div class="page-container">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Intel Hub & Relational Map</h1>
+            <p class="page-subtitle">Visualizing cross-document entity relationships, threat vectors, IOCs, and AI-synthesized intelligence nodes.</p>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button class="btn-outline" onclick="if(app.graph) app.graph.resetView()">RESET VIEW</button>
+            <button class="btn-primary" onclick="app.openDossierModal()">EXPORT DOSSIER</button>
+          </div>
+        </div>
+
+        <div class="bento-grid">
+          <!-- Force Directed Graph -->
+          <div class="bento-card graph-container">
+            <div class="graph-header">
+              <div>
+                <div class="bento-title">Relational Knowledge Map</div>
+                <div class="bento-sub">Physics Topology v4.2</div>
+              </div>
+            </div>
+
+            <canvas id="knowledge-graph-canvas"></canvas>
+
+            <div class="graph-filter-chips">
+              <span class="filter-chip active" onclick="app.graph.setFilter('all'); document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active')); this.classList.add('active');">ALL ENTITIES</span>
+              <span class="filter-chip" onclick="app.graph.setFilter('threat_actors'); document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active')); this.classList.add('active');">THREAT ACTORS</span>
+              <span class="filter-chip" onclick="app.graph.setFilter('organizations'); document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active')); this.classList.add('active');">ORGANIZATIONS</span>
+              <span class="filter-chip" onclick="app.graph.setFilter('cves'); document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active')); this.classList.add('active');">CVEs</span>
+              <span class="filter-chip" onclick="app.graph.setFilter('financials'); document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active')); this.classList.add('active');">FINANCIALS</span>
+            </div>
+
+            <div class="graph-controls">
+              <button class="icon-btn" onclick="app.graph.scale *= 1.2" title="Zoom In">+</button>
+              <button class="icon-btn" onclick="app.graph.scale *= 0.8" title="Zoom Out">-</button>
+              <button class="icon-btn" onclick="app.graph.physicsEnabled = !app.graph.physicsEnabled; this.classList.toggle('active', app.graph.physicsEnabled);" title="Toggle Physics">⚡</button>
+            </div>
+          </div>
+
+          <!-- Alerts Card -->
+          <div class="bento-card alerts-card">
+            <div class="card-title-row">
+              <div>
+                <div class="bento-title">Critical Threat Alerts</div>
+                <div class="bento-sub">Real-Time Corroboration</div>
+              </div>
+              <span class="nav-badge alert">04 ACTIVE</span>
+            </div>
+
+            <div class="alert-feed-list">
+              <div class="alert-item" style="--alert-color: var(--crimson);" onclick="app.pivotQuery('APT29')">
+                <div class="alert-meta">
+                  <span class="alert-tag">High Risk Threat</span>
+                  <span class="alert-time">2m ago</span>
+                </div>
+                <div class="alert-title">APT29 Credential Harvesting</div>
+                <div class="alert-desc">Active exploitation of CVE-2024-38812 detected originating from VPN node 194.26.29.112.</div>
+                <div class="alert-action-link">VIEW INVESTIGATION →</div>
+              </div>
+
+              <div class="alert-item" style="--alert-color: var(--amber);" onclick="app.pivotQuery('Project Bluebird')">
+                <div class="alert-meta">
+                  <span class="alert-tag" style="color:var(--amber);">Financial Anomaly</span>
+                  <span class="alert-time">14m ago</span>
+                </div>
+                <div class="alert-title">Unauthorized Wire Transfer</div>
+                <div class="alert-desc">$12.8M EUR routed to Swiss Bank Zurich shell entity bypassing standard procurement rules.</div>
+                <div class="alert-action-link">REVIEW MATCHES →</div>
+              </div>
+
+              <div class="alert-item" style="--alert-color: var(--purple);" onclick="app.pivotQuery('CISA')">
+                <div class="alert-meta">
+                  <span class="alert-tag" style="color:var(--purple);">Advisory Alert</span>
+                  <span class="alert-time">1h ago</span>
+                </div>
+                <div class="alert-title">Infrastructure Vulnerability</div>
+                <div class="alert-desc">Joint CISA/FBI bulletin on energy grid targeting across US and European nodes.</div>
+                <div class="alert-action-link">INSPECT ADVISORY →</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Entity Distribution -->
+          <div class="bento-card entity-dist-card">
+            <div class="card-title-row">
+              <div>
+                <div class="bento-title">Entity Distribution</div>
+                <div class="bento-sub">Across Corpus Chunks</div>
+              </div>
+            </div>
+            <div id="entity-bars-container"></div>
+          </div>
+
+          <!-- Summaries -->
+          <div class="bento-card intel-summary-card">
+            <div class="card-title-row">
+              <div>
+                <div class="bento-title">Intelligence Summaries</div>
+                <div class="bento-sub">Automated Analytical Findings</div>
+              </div>
+            </div>
+
+            <div class="summary-grid">
+              <div class="summary-box">
+                <div class="summary-badge">Strategic Correlation</div>
+                <div class="summary-title">Cross-Regional Linkages</div>
+                <div class="summary-body">High overlap in infrastructure nodes between Frankfurt VPNs and US agency targets indicates coordinated state-sponsored action.</div>
+              </div>
+
+              <div class="summary-box">
+                <div class="summary-badge">Forensic Finding</div>
+                <div class="summary-title">Corporate Obfuscation</div>
+                <div class="summary-body">Shell Entity Alpha Inc is directly linked to Entity_X, violating conflict-of-interest regulations in Project Bluebird.</div>
+              </div>
+
+              <div class="summary-box">
+                <div class="summary-badge">Vulnerability Vector</div>
+                <div class="summary-title">Edge Gateway Exploits</div>
+                <div class="summary-body">CVE-2024-38812 remains the primary ingress vector across all documented incident files.</div>
+              </div>
+
+              <div class="summary-box">
+                <div class="summary-badge">Financial Forensic</div>
+                <div class="summary-title">Offshore Capital Flow</div>
+                <div class="summary-body">$4.25M USD in crypto assets converted to privacy coins following initial exfiltration events.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         VIEW 3: RAG WORKSPACE
+         ══════════════════════════════════════════════════════════════ -->
+    <section class="view-content" id="view-workspace">
+      <div class="workspace-container">
+        <!-- Chat Panel -->
+        <div class="chat-panel">
+          <!-- Tactical Playbooks Bar -->
+          <div class="tactical-playbooks-bar">
+            <span class="playbook-label">Playbooks:</span>
+            <button class="playbook-btn" onclick="ragEngine.sendQuery('Identify all threat actors, attack vectors, and CVEs across the corpus.')">🎯 Threat Profiling</button>
+            <button class="playbook-btn" onclick="ragEngine.sendQuery('Audit all financial transactions, amounts, and money laundering indicators.')">💰 Financial Forensics</button>
+            <button class="playbook-btn" onclick="ragEngine.sendQuery('Reconstruct the timeline of security breach events and exfiltrations.')">⏱ Timeline Reconstruction</button>
+            <button class="playbook-btn" onclick="ragEngine.sendQuery('Generate a comprehensive executive intelligence briefing.')">📑 Executive Brief</button>
+          </div>
+
+          <!-- Chat Messages Scroll -->
+          <div class="chat-messages-scroll" id="chat-messages-scroll">
+            <div class="chat-msg ai">
+              <div class="msg-avatar ai">AI</div>
+              <div class="msg-bubble">
+                <div class="msg-text">
+                  <p><strong>AIDA Core Online.</strong> Vector space synchronized with your document corpus.</p>
+                  <p>Ask natural language questions to cross-reference intelligence, discover hidden entity relationships, investigate financial anomalies, or extract IOCs.</p>
+                </div>
+                <div class="msg-meta-row">
+                  <span>Initialized</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat Input Area -->
+          <div class="chat-input-area">
+            <div class="chat-input-container">
+              <div class="chat-input-row">
+                <textarea 
+                  class="chat-textarea" 
+                  id="chat-input-textarea" 
+                  placeholder="Ask AIDA about documents, threat actors, financial transfers, or vulnerabilities..."
+                  rows="1"
+                  onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); ragEngine.sendQuery(this.value); this.value = ''; }"
+                ></textarea>
+                <button class="btn-primary" onclick="const t = document.getElementById('chat-input-textarea'); ragEngine.sendQuery(t.value); t.value = '';">
+                  <span>SEND →</span>
+                </button>
+              </div>
+              <div class="chat-input-controls">
+                <div class="chat-context-hint">
+                  <span>⚡ Semantic RAG active · Top-K: 5</span>
+                </div>
+                <div style="display:flex; gap:8px;">
+                  <button class="btn-outline" style="padding:4px 10px; font-size:11px;" onclick="app.toggleMobileCitations()">
+                    🔍 Citations
+                  </button>
+                  <button class="btn-outline" style="padding:4px 10px; font-size:11px;" onclick="app.switchView('knowledge')">
+                    + Upload Document
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Citation Inspector Panel -->
+        <aside class="citation-panel">
+          <div class="citation-header">
+            <div>
+              <div class="bento-title" style="font-size:14px;">Citation Inspector</div>
+              <div class="bento-sub">Retrieved Context Passages</div>
+            </div>
+            <button class="icon-btn" onclick="app.toggleMobileCitations()" style="display:none;" id="btn-close-citations">✕</button>
+          </div>
+
+          <div class="citation-body" id="citation-body">
+            <div style="color:var(--text-muted); font-size:12px; text-align:center; padding:40px 20px; line-height:1.8;">
+              <div style="font-size:28px; margin-bottom:12px;">🔍</div>
+              No context citations loaded yet.<br>
+              Run an intelligence query to inspect retrieved evidence passages.
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         VIEW 4: KNOWLEDGE BASE
+         ══════════════════════════════════════════════════════════════ -->
+    <section class="view-content" id="view-knowledge">
+      <div class="page-container">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Knowledge Base & Corpus Ingestion</h1>
+            <p class="page-subtitle">Ingest, manage, and query multi-source documents (.pdf, .docx, .txt, .csv, .json, .md). Files are automatically parsed, chunked, and vector indexed.</p>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn-outline" onclick="app.loadSampleIntelCorpus()">LOAD SAMPLE INTEL CORPUS</button>
+            <button class="btn-primary" onclick="document.getElementById('kb-file-input').click()">UPLOAD FILES →</button>
+          </div>
+        </div>
+
+        <!-- Top Layout: Drop zone + Vector status -->
+        <div class="kb-top-layout">
+          <!-- Drop zone -->
+          <div class="drop-zone" id="kb-drop-zone">
+            <input type="file" id="kb-file-input" style="display:none;" multiple accept=".pdf,.docx,.txt,.csv,.json,.md">
+            <div class="drop-icon">📄</div>
+            <div class="drop-title">Drag & Drop Intelligence Files</div>
+            <div class="drop-subtitle">Supports PDF, DOCX, TXT, CSV, JSON, Markdown. Files are parsed with entity recognition and vector indexed.</div>
+            <button class="btn-primary" style="margin-top:8px;">
+              BROWSE FILES TO INGEST
+            </button>
+          </div>
+
+          <!-- Vector Store Status -->
+          <div class="bento-card">
+            <div class="card-title-row">
+              <div>
+                <div class="bento-title">Vector Store Status</div>
+                <div class="bento-sub">FAISS IndexFlatIP</div>
+              </div>
+              <span class="status-dot"></span>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:12px; margin-top:8px;">
+              <div style="display:flex; justify-content:space-between; font-size:12px;">
+                <span style="color:var(--text-muted);">Embedding Engine:</span>
+                <span style="color:var(--emerald); font-weight:700;">text-embedding-3-small</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:12px;">
+                <span style="color:var(--text-muted);">Dimensions:</span>
+                <span style="font-family:var(--font-mono); color:var(--text-bright); font-weight:700;">1,536</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:12px;">
+                <span style="color:var(--text-muted);">Index Type:</span>
+                <span style="color:var(--blue); font-weight:600;">Cosine Similarity</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:12px;">
+                <span style="color:var(--text-muted);">Chunk Strategy:</span>
+                <span style="color:var(--text-secondary);">450 tok / 50 overlap</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ingested Documents Table -->
+        <div class="data-table-card">
+          <div class="table-header-bar">
+            <div class="bento-title">Ingested Intelligence Documents</div>
+            <span class="nav-badge" id="kb-doc-count-badge">0 DOCUMENTS</span>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>DOCUMENT NAME</th>
+                  <th>DATE INGESTED</th>
+                  <th>CHUNKS</th>
+                  <th>STATUS</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="kb-documents-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         VIEW 5: SYSTEMS TELEMETRY
+         ══════════════════════════════════════════════════════════════ -->
+    <section class="view-content" id="view-systems">
+      <div class="page-container">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Systems Health & Diagnostics</h1>
+            <p class="page-subtitle">Real-time performance metrics, vector store distribution, and live system logs.</p>
+          </div>
+          <button class="btn-outline" onclick="app.showToast('Diagnostics complete: All subsystems nominal', 'success')">
+            RUN DIAGNOSTICS
+          </button>
+        </div>
+
+        <div class="sys-grid">
+          <div class="bento-card">
+            <div class="card-title-row">
+              <div>
+                <div class="bento-title">FastAPI Backend</div>
+                <div class="bento-sub">REST Layer · Port 8000</div>
+              </div>
+              <span class="badge-status indexed"><span class="status-dot"></span> HEALTHY</span>
+            </div>
+            <div style="font-size:28px; font-weight:800; color:var(--emerald); font-family:var(--font-display); margin:12px 0 4px;">99.98%</div>
+            <div style="font-size:11px; color:var(--text-muted);">Throughput & uptime rate</div>
+          </div>
+
+          <div class="bento-card">
+            <div class="card-title-row">
+              <div>
+                <div class="bento-title">FAISS Vector Space</div>
+                <div class="bento-sub">IndexFlatIP / Cosine</div>
+              </div>
+              <span class="badge-status indexed"><span class="status-dot"></span> ACTIVE</span>
+            </div>
+            <div style="font-size:28px; font-weight:800; color:var(--blue); font-family:var(--font-display); margin:12px 0 4px;">3.2ms</div>
+            <div style="font-size:11px; color:var(--text-muted);">Avg Cosine Similarity Latency</div>
+          </div>
+
+          <div class="bento-card">
+            <div class="card-title-row">
+              <div>
+                <div class="bento-title">Embedding Engine</div>
+                <div class="bento-sub">Multi-Provider LLM RAG</div>
+              </div>
+              <span class="badge-status indexed"><span class="status-dot"></span> READY</span>
+            </div>
+            <div style="font-size:28px; font-weight:800; color:var(--indigo); font-family:var(--font-display); margin:12px 0 4px;">128k</div>
+            <div style="font-size:11px; color:var(--text-muted);">Token processing capacity/min</div>
+          </div>
+        </div>
+
+        <!-- Terminal Card -->
+        <div class="terminal-card">
+          <div class="terminal-header">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="terminal-dots">
+                <div class="t-dot" style="background:#ff5f56;"></div>
+                <div class="t-dot" style="background:#ffbd2e;"></div>
+                <div class="t-dot" style="background:#27c93f;"></div>
+              </div>
+              <span style="font-size:11px; color:#94a3b8; font-family:var(--font-mono);">aida-telemetry-stream — real-time</span>
+            </div>
+            <button class="mini-action-btn" style="color:#94a3b8;" onclick="app.initSampleLogs(); app.showToast('Terminal logs cleared', 'info');">Clear Logs</button>
+          </div>
+          <div class="terminal-body" id="systems-terminal-body"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         VIEW 6: SETTINGS
+         ══════════════════════════════════════════════════════════════ -->
+    <section class="view-content" id="view-settings">
+      <div class="page-container" style="max-width:800px;">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">System Settings & Cloud Database</h1>
+            <p class="page-subtitle">Configure AI model providers, Firebase Cloud sync, vector indexing parameters, and UI preferences.</p>
+          </div>
+        </div>
+
+        <div class="bento-card" style="margin-bottom:20px;">
+          <div class="card-title-row" style="margin-bottom:12px;">
+            <div>
+              <div class="bento-title" style="display:flex; align-items:center; gap:8px;">
+                <span>🦙 Ollama Local LLM & Embeddings</span>
+                <span class="badge-status indexed" id="ollama-status-badge">Checking...</span>
+              </div>
+              <div class="bento-sub">100% Offline, Private, Zero-Cost Local Intelligence</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Ollama Host URL</label>
+            <div class="form-help">Default is standard local port 11434.</div>
+            <div style="display:flex; gap:10px;">
+              <input type="text" class="form-input" id="settings-ollama-host" placeholder="http://localhost:11434" value="http://localhost:11434">
+              <button class="btn-outline" style="white-space:nowrap;" onclick="app.testOllamaConnection()">Test Connection</button>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div class="form-group">
+              <label class="form-label">Ollama Reasoning Model</label>
+              <div class="form-help">e.g. llama3.2, mistral, deepseek-r1, qwen2.5</div>
+              <input type="text" class="form-input" id="settings-ollama-model" placeholder="llama3.2" value="llama3.2">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Ollama Embedding Model</label>
+              <div class="form-help">e.g. nomic-embed-text, all-minilm, llama3.2</div>
+              <input type="text" class="form-input" id="settings-ollama-embed" placeholder="nomic-embed-text" value="nomic-embed-text">
+            </div>
+          </div>
+        </div>
+
+        <div class="bento-card">
+          <div class="form-group">
+            <label class="form-label">Primary AI Reasoning Provider</label>
+            <div class="form-help">Select your active engine. Ollama operates completely offline.</div>
+            <select class="form-select" id="settings-provider-select">
+              <option value="ollama" selected>🦙 Ollama Local LLM (Zero API Key)</option>
+              <option value="auto">Auto (Ollama > OpenAI > Gemini > Fallback)</option>
+              <option value="fallback">Built-in Extractive Hybrid Neural Engine</option>
+              <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
+              <option value="gemini">Google Gemini (Gemini 2.0 / 1.5 Flash)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Firebase Cloud Database Configuration (JSON)</label>
+            <div class="form-help">Paste custom Firebase config object to sync documents and chats directly to Cloud Firestore.</div>
+            <textarea class="form-input" id="settings-firebase-config" placeholder='{"apiKey": "...", "authDomain": "...", "projectId": "..."}' rows="3"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">OpenAI API Key (Optional)</label>
+            <div class="form-help">Optional fallback key if Ollama is paused.</div>
+            <input type="password" class="form-input" id="settings-openai-key" placeholder="sk-...">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Google Gemini API Key (Optional)</label>
+            <div class="form-help">Optional fallback key if Ollama is paused.</div>
+            <input type="password" class="form-input" id="settings-gemini-key" placeholder="AIzaSy...">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Backend API URL</label>
+            <div class="form-help">Override the API URL if hosting FastAPI separately from the web frontend.</div>
+            <input type="text" class="form-input" id="settings-api-endpoint" placeholder="http://localhost:8000 (or /api for Vercel)">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Top-K Retrieved Chunks</label>
+            <div class="form-help">Number of semantic context chunks retrieved for each query.</div>
+            <input type="number" class="form-input" id="settings-top-k" value="5" min="1" max="20">
+          </div>
+
+          <div class="form-group" style="display:flex; align-items:center; gap:10px;">
+            <input type="checkbox" id="settings-sound-toggle" checked style="accent-color:var(--emerald); width:18px; height:18px;">
+            <div>
+              <label for="settings-sound-toggle" class="form-label" style="margin:0; cursor:pointer;">Tactical UI Sound Effects</label>
+              <div class="form-help" style="margin:0;">Synthesized Web Audio clicks, alerts, and scan hums.</div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+            <button class="btn-primary" onclick="app.saveSettings()">SAVE SETTINGS</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL DIALOGS
+     ══════════════════════════════════════════════════════════════ -->
+
+<!-- Document Preview Modal -->
+<div class="modal-backdrop" id="modal-doc-preview">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <div class="bento-title" id="doc-preview-title">Document Inspection</div>
+      <button class="icon-btn" onclick="app.closeAllModals()">✕</button>
+    </div>
+    <div class="modal-body" id="doc-preview-body"></div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="app.closeAllModals()">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- Entity Detail Modal -->
+<div class="modal-backdrop" id="modal-entity-detail">
+  <div class="modal-dialog" style="max-width:520px;">
+    <div class="modal-header">
+      <div class="bento-title" id="entity-detail-title">Entity Intel</div>
+      <button class="icon-btn" onclick="app.closeAllModals()">✕</button>
+    </div>
+    <div class="modal-body" id="entity-detail-body"></div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="app.closeAllModals()">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- Dossier Export Modal -->
+<div class="modal-backdrop" id="modal-dossier-export">
+  <div class="modal-dialog" style="max-width:620px;">
+    <div class="modal-header">
+      <div class="bento-title">Export Intelligence Dossier Briefing</div>
+      <button class="icon-btn" onclick="app.closeAllModals()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Briefing Dossier Title</label>
+        <input type="text" class="form-input" id="dossier-title-input" value="AIDA Strategic Threat & Entity Briefing">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Security Classification</label>
+        <select class="form-select" id="dossier-classification-select">
+          <option value="CONFIDENTIAL // NOFORN">CONFIDENTIAL // NOFORN</option>
+          <option value="SECRET // LAW ENFORCEMENT SENSITIVE">SECRET // LAW ENFORCEMENT SENSITIVE</option>
+          <option value="INTERNAL OPERATIONAL INTELLIGENCE">INTERNAL OPERATIONAL INTELLIGENCE</option>
+          <option value="UNCLASSIFIED // FOR PUBLIC RELEASE">UNCLASSIFIED // FOR PUBLIC RELEASE</option>
+        </select>
+      </div>
+      <p style="font-size:12px; color:var(--text-secondary); line-height:1.6;">
+        Exports an automated intelligence dossier summarizing all cataloged evidence, entity links, CVE vulnerabilities, and threat actors across the current corpus.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="app.executeDossierExport('print')">🖨 Print / PDF</button>
+      <button class="btn-outline" onclick="app.executeDossierExport('md')">📄 Markdown (.md)</button>
+      <button class="btn-outline" onclick="app.executeDossierExport('html')">🌐 HTML Report</button>
+      <button class="btn-primary" onclick="app.executeDossierExport('json')">📊 JSON Dataset</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notifications Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Application Scripts -->
+<script src="js/firebase.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/documentParser.js"></script>
+<script src="js/graph.js"></script>
+<script src="js/ragEngine.js"></script>
+<script src="js/dossier.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
